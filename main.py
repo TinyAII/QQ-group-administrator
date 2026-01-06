@@ -46,105 +46,6 @@ class QQAdminPlugin(Star):
         )
         self.divided_manage = config["divided_manage"]
 
-    # 群管帮助菜单HTML模板
-    ADMIN_HELP_TEMPLATE = '''
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>群管帮助菜单</title>
-        <style>
-            body {
-                font-family: 'Microsoft YaHei', Arial, sans-serif;
-                background-color: #f5f5f5;
-                margin: 0;
-                padding: 20px;
-                line-height: 2.0;
-            }
-            .container {
-                max-width: 950px;
-                margin: 0 auto;
-                background-color: white;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            }
-            .menu-title {
-                font-size: 32px;
-                font-weight: bold;
-                color: #28a745;
-                text-align: center;
-                margin-bottom: 40px;
-                padding: 15px;
-                background-color: #e8f5e8;
-                border-radius: 8px;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            }
-            .category-title {
-                font-size: 24px;
-                font-weight: bold;
-                color: #17a2b8;
-                margin: 30px 0 20px 0;
-                padding: 10px 0;
-                border-bottom: 3px solid #17a2b8;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            .command-item {
-                font-size: 18px;
-                line-height: 2.2;
-                margin: 15px 0;
-                padding: 10px;
-                background-color: #f8f9fa;
-                border-radius: 8px;
-                border-left: 4px solid #ffc107;
-                transition: all 0.3s ease;
-            }
-            .command-item:hover {
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                transform: translateX(5px);
-            }
-            .command-format {
-                font-weight: bold;
-                color: #dc3545;
-                font-size: 20px;
-            }
-            .command-desc {
-                color: #495057;
-                margin-left: 10px;
-            }
-            .highlight {
-                color: #ff6b6b;
-                font-weight: bold;
-                background-color: #fff3cd;
-                padding: 2px 6px;
-                border-radius: 4px;
-            }
-            .note-section {
-                margin: 30px 0;
-                padding: 20px;
-                background-color: #d1ecf1;
-                border: 1px solid #bee5eb;
-                border-radius: 8px;
-                color: #0c5460;
-                font-size: 18px;
-            }
-            .attention {
-                color: #dc3545;
-                font-weight: bold;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            {{title}}
-            {{content}}
-        </div>
-    </body>
-    </html>
-    '''
-
     async def initialize(self):
         # 数据库
         self.db = QQAdminDB(self.conf, self.db_path)
@@ -593,68 +494,146 @@ class QQAdminPlugin(Star):
             await self.db.reset_to_default(str(gid))
             yield event.plain_result("已重置本群的群管配置")
 
-    async def text_to_image_admin_help(self, text: str) -> str:
-        """使用自定义HTML模板生成群管帮助图片"""
+    # 群管帮助菜单的HTML模板
+    MENU_TEMPLATE = '''
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>群管帮助菜单</title>
+        <style>
+            body {
+                font-family: 'Microsoft YaHei', Arial, sans-serif;
+                background-color: #f5f5f5;
+                margin: 0;
+                padding: 20px;
+                line-height: 2.0;
+            }
+            .container {
+                max-width: 950px;
+                margin: 0 auto;
+                background-color: white;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            }
+            .menu-title {
+                font-size: 32px;
+                font-weight: bold;
+                color: #28a745;
+                text-align: center;
+                margin-bottom: 40px;
+                padding: 15px;
+                background-color: #e8f5e8;
+                border-radius: 8px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            }
+            .category-title {
+                font-size: 24px;
+                font-weight: bold;
+                color: #17a2b8;
+                margin: 30px 0 20px 0;
+                padding: 10px 0;
+                border-bottom: 3px solid #17a2b8;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .menu-item {
+                font-size: 18px;
+                line-height: 2.2;
+                margin: 15px 0;
+                padding: 10px;
+                background-color: #f8f9fa;
+                border-radius: 8px;
+                border-left: 4px solid #ffc107;
+            }
+            .command-name {
+                font-weight: bold;
+                color: #dc3545;
+                font-size: 20px;
+            }
+            .command-format {
+                color: #333;
+                font-weight: normal;
+            }
+            .command-desc {
+                color: #495057;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="menu-title">🔧 群管插件帮助 🔧</h1>
+            {{content}}
+        </div>
+    </body>
+    </html>
+    '''
+
+    async def text_to_image_menu_style(self, text: str) -> str:
+        """使用菜单样式的HTML模板生成图片"""
         try:
-            # 将Markdown文本转换为结构化HTML
+            # 将文本内容转换为结构化HTML
             lines = text.split('\n')
             html_parts = []
             
             for line in lines:
                 line = line.rstrip()
                 
-                # 处理标题
+                # 检测主标题
                 if line.startswith('#【') and line.endswith('】'):
-                    # 主标题
-                    title_text = line.strip('#【】')
                     continue
+                
+                # 检测分类标题（二级标题）
                 elif line.startswith('## '):
-                    # 分类标题
-                    category_name = line[3:].strip()
+                    category_name = line.replace('## ', '')
                     html_parts.append(f'<h2 class="category-title">{category_name}</h2>')
                     continue
                 
-                # 处理命令行
-                elif line.startswith('- '):
-                    # 解析命令和描述
-                    command_part = line[2:]
-                    if '：' in command_part:
-                        cmd_format, cmd_desc = command_part.split('：', 1)
-                        # 高亮显示命令格式中的关键部分
-                        cmd_format = cmd_format.replace('<秒数>', '<span class="highlight">秒数</span>')
-                        cmd_format = cmd_format.replace('<新昵称>', '<span class="highlight">新昵称</span>')
-                        cmd_format = cmd_format.replace('<头衔>', '<span class="highlight">头衔</span>')
-                        cmd_format = cmd_format.replace('<新群名>', '<span class="highlight">新群名</span>')
-                        cmd_format = cmd_format.replace('<关键词>', '<span class="highlight">关键词</span>')
-                        cmd_format = cmd_format.replace('<等级>', '<span class="highlight">等级</span>')
-                        cmd_format = cmd_format.replace('<次数>', '<span class="highlight">次数</span>')
-                        cmd_format = cmd_format.replace('<文件名>', '<span class="highlight">文件名</span>')
-                        cmd_format = cmd_format.replace('<文件夹名>', '<span class="highlight">文件夹名</span>')
-                        cmd_format = cmd_format.replace('<抽取消息轮数>', '<span class="highlight">抽取消息轮数</span>')
-                        cmd_format = cmd_format.replace('<群号>', '<span class="highlight">群号</span>')
-                        cmd_format = cmd_format.replace('@用户', '<span class="highlight">@用户</span>')
-                        
-                        html_parts.append(f'<div class="command-item">')
-                        html_parts.append(f'<span class="command-format">{cmd_format}</span>')
-                        html_parts.append(f'<span class="command-desc">：{cmd_desc}</span>')
-                        html_parts.append(f'</div>')
-                
-                # 处理空行
+                # 检测空行
                 elif line.strip() == '':
                     continue
                 
-                # 处理其他文本
+                # 检测命令行
+                elif line.startswith('- '):
+                    # 解析命令条目
+                    command_line = line[2:]  # 去掉开头的 "- "
+                    
+                    # 查找命令描述分隔符
+                    if '：' in command_line:
+                        command_part, desc_part = command_line.split('：', 1)
+                    else:
+                        command_part = command_line
+                        desc_part = ''
+                    
+                    # 提取命令名称和格式
+                    command_format = command_part.strip()
+                    command_desc = desc_part.strip()
+                    
+                    # 提取命令名称（第一个空格前的内容）
+                    if ' ' in command_format:
+                        command_name = command_format.split(' ')[0]
+                    else:
+                        command_name = command_format
+                    
+                    # 生成HTML
+                    html_parts.append(f'<div class="menu-item">')
+                    html_parts.append(f'<span class="command-name">{command_name}</span> ')
+                    html_parts.append(f'<span class="command-format">{command_format}</span> ')
+                    html_parts.append(f'<span class="command-desc">：{command_desc}</span>')
+                    html_parts.append(f'</div>')
+                
+                # 处理其他文本行
                 else:
                     html_parts.append(f'<div class="content-line">{line}</div>')
             
             # 组装最终HTML内容
             formatted_html = '\n'.join(html_parts)
             
-            # 生成标题
-            title_html = '<h1 class="menu-title">群管帮助菜单</h1>'
-            
             # 渲染HTML模板
-            html_content = self.ADMIN_HELP_TEMPLATE.replace("{{title}}", title_html).replace("{{content}}", formatted_html)
+            html_content = self.MENU_TEMPLATE.replace("{{content}}", formatted_html)
             
             # 使用html_render函数生成图片
             options = {
@@ -672,14 +651,14 @@ class QQAdminPlugin(Star):
             
             return image_url
         except Exception as e:
-            logger.error(f"群管帮助图片生成失败：{e}")
+            logger.error(f"菜单样式图片生成失败：{e}")
             # 回退到默认的text_to_image方法
             return await self.text_to_image(text)
 
     @filter.command("群管帮助")
     async def qq_admin_help(self, event: AiocqhttpMessageEvent):
         """查看群管帮助"""
-        url = await self.text_to_image_admin_help(ADMIN_HELP)
+        url = await self.text_to_image_menu_style(ADMIN_HELP)
         yield event.image_result(url)
 
     async def terminate(self):
