@@ -657,7 +657,7 @@ class QQAdminPlugin(Star):
             # 回退到默认的text_to_image方法
             return await self.text_to_image(text)
 
-    @filter.command("群管菜单")
+    @filter.command("群管菜单", alias={"群管帮助"})
     async def qq_admin_help(self, event: AiocqhttpMessageEvent):
         """查看群管菜单"""
         url = await self.text_to_image_menu_style(ADMIN_HELP)
