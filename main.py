@@ -41,9 +41,8 @@ class QQAdminPlugin(Star):
         self.admins_id: list[str] = context.get_config().get("admins_id", [])
         self.plugin_data_dir = StarTools.get_data_dir("astrbot_plugin_qqadmin")
         self.db_path = self.plugin_data_dir / f"qqadmin_data_v{self.DB_VERSION}.db"
-        self.ban_lexicon_path = Path(
-            "data/plugins/astrbot_plugin_qqadmin/SensitiveLexicon.json"
-        )
+        # 使用插件根目录下的SensitiveLexicon.json文件
+        self.ban_lexicon_path = Path(__file__).parent / "SensitiveLexicon.json"
         self.divided_manage = config["divided_manage"]
 
     async def initialize(self):
