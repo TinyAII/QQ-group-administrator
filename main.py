@@ -224,7 +224,7 @@ class QQAdminPlugin(Star):
     @filter.event_message_type(EventMessageType.GROUP_MESSAGE)
     async def on_ban_words(self, event: AiocqhttpMessageEvent):
         """自动检测违禁词，撤回并禁言"""
-        if not event.is_admin():
+        if not event.is_admin() and hasattr(self, 'banpro'):
             await self.banpro.on_ban_words(event)
 
     @filter.command("刷屏禁言")
@@ -239,7 +239,8 @@ class QQAdminPlugin(Star):
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     async def spamming_ban(self, event: AiocqhttpMessageEvent):
         """刷屏检测与禁言"""
-        await self.banpro.spamming_ban(event)
+        if hasattr(self, 'banpro'):
+            await self.banpro.spamming_ban(event)
 
     @filter.command("投票禁言", desc="投票禁言 <秒数> @群友")
     @perm_required(PermLevel.ADMIN, perm_key="vote")
@@ -368,7 +369,8 @@ class QQAdminPlugin(Star):
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
     async def event_monitoring(self, event: AiocqhttpMessageEvent):
         """监听进群/退群事件"""
-        await self.join.event_monitoring(event)
+        if hasattr(self, 'join'):
+            await self.join.event_monitoring(event)
 
     @filter.command("群友信息", desc="查看群友信息")
     @perm_required(PermLevel.MEMBER)
@@ -565,7 +567,7 @@ class QQAdminPlugin(Star):
     </head>
     <body>
         <div class="container">
-            <h1 class="menu-title">🔧 群管插件帮助 🔧</h1>
+            <h1 class="menu-title">🔧 群管插件菜单 🔧</h1>
             {{content}}
         </div>
     </body>
@@ -655,9 +657,9 @@ class QQAdminPlugin(Star):
             # 回退到默认的text_to_image方法
             return await self.text_to_image(text)
 
-    @filter.command("群管帮助")
+    @filter.command("群管菜单")
     async def qq_admin_help(self, event: AiocqhttpMessageEvent):
-        """查看群管帮助"""
+        """查看群管菜单"""
         url = await self.text_to_image_menu_style(ADMIN_HELP)
         yield event.image_result(url)
 
